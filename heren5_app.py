@@ -36,10 +36,10 @@ def login():
     else:
         return render_template('index.html')
 
-#
-# @app.route('/sad')
-# def sad():
-#     return render_template('sad.html')
+
+@app.route('/sad')
+def sad():
+    return render_template('sad.html')
 
 
 if __name__ == '__main__':
