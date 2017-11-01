@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>The most magnificient team of the world</title>
+<style>
+    body {
+        width: 35em;
+        margin: 0 auto;
+        font-family: Tahoma, Verdana, Arial, sans-serif;
+    }
+</style>
+<script type="text/javascript">
+    function ReadCookies() {
+        if(typeof(String.prototype.trim) === "undefined") {
+            String.prototype.trim = function() {
+                return String(this).replace(/^\s+|\s+$/g, '');
+            };
+        }
+
+        var cookies_string = document.cookie;
+        var s = cookies_string.split(';');
+        var out = {};
+        for (var idx =0; idx < s.length; idx += 1) {
+            var t = s[idx].split('=', 2);
+            var name = "";
+            var value = "";
+            if (t.length == 2) {
+                name = t[0].trim();
+                value = t[1].trim();
+                out[name] = value
+            }
+        }
+        return out
+    }
+    function WriteCookies(cookieDict) {
+        var l = [];
+        for (var cookiename in cookieDict) {
+            if (cookiename !== "") {
+                var cookie = cookieDict[cookiename];
+                var value = cookie.value;
+                var expires = cookie.expires;
+                var s = cookiename + "=" + value;
+                if (expires !== undefined) {
+                    s += "; expires="+ expires;
+                }
+                document.cookie = s;
+            }
+        }
+    }
+    function DoRequest(str) {
+        var http = new XMLHttpRequest();
+        http.open("post", "/")
+                //Send the proper header information along with the request
+        http.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+        http.onreadystatechange = function() {//Call a function when the state changes.
+            if(http.readyState === 4) {
+                if (http.status === 200) {
+                    var d = new Date();
+                    d.setTime(d.getTime() + (30*24*60*60*1000));
+                    var cookies = {login: {value: str, expires:d.toUTCString()}};
+                    WriteCookies(cookies);
+                }
+                if (http.status === 200 || http.status === 401) {
+                    if (http.responseText !== undefined) {
+                        window.open(http.responseText, '_self');
+                    }
+                }
+            }
+        };
+        var params = "input="+str;
+        http.send(params);
+    }
+    function PopUp(){
+        var input_string = window.prompt("Een! Twee! Vijf!")
+        DoRequest(input_string)
+    }
+    window.onload = function(){
+        if (document.cookie !== undefined) {
+            var cookies = ReadCookies()
+            if (cookies["login"] !== undefined) {
+                DoRequest(cookies["login"])
+                return;
+            }
+        }
+        PopUp();
+    };
+</script>
+</head>
+<body>
+<h1>Awesomeness</h1>
+<p>Maar sta de pop-up eens toe, en ververs dan de pagina.</p>
+</body>
+</html>
