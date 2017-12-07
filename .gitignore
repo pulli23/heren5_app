@@ -96,15 +96,9 @@ ENV/
 # Rope project settings
 .ropeproject
 
-.idea/vcs.xml
-.idea/workspace.xml
+.idea/
 static/data.txt
 private_data/*
-jspm_packages/
-node_modules/
-typings/
 /build/reports/
-/coverage/
-/test/e2e/dist/
 !/build/
 !/export/*
