@@ -1,0 +1,1 @@
+{"version":3,"file":"setup.js","sourceRoot":"","sources":["setup.ts"],"names":[],"mappings":";;;IAEA,gCAAU,EAAE,CAAC","sourcesContent":["import 'aurelia-polyfills';\nimport {initialize} from 'aurelia-pal-browser';\ninitialize();\n"]}

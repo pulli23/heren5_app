@@ -1,6 +1,4 @@
 # Created by .ignore support plugin (hsz.mobi)
-static/data.txt
-
 
 ### Python template
 # Byte-compiled / optimized / DLL files
@@ -98,3 +96,15 @@ ENV/
 # Rope project settings
 .ropeproject
 
+.idea/vcs.xml
+.idea/workspace.xml
+static/data.txt
+private_data/*
+jspm_packages/
+node_modules/
+typings/
+/build/reports/
+/coverage/
+/test/e2e/dist/
+!/build/
+!/export/*

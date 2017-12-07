@@ -1,0 +1,38 @@
+<template>
+  <section class="au-animate" ref="section">
+    <div class="wrapper" ref="wrapperContainer">
+      <header><h2>${heading}</h2></header>
+      <div class="content" ref="contentContainer">
+        <div class="content-left"></div>
+        <div class="content-right">
+          <label>
+            Field layout:<br>
+            <select value.bind="selected_field_idx">
+              <option repeat.for="field of fieldnames"
+                      model.bind="field">
+                ${field}
+              </option>
+            </select>
+          </label><br>
+          Aspect ratio: ${selected_aspect_ratio}<br>
+          <label>
+            Number players: <br>
+            <input type="number" value.two-way="playerCount" min="0" step="1">
+          </label>
+          <label>
+            Player name: <br>
+            <input type="text" value.two-way="editablePlayerName">
+          </label>
+          <label>
+            Player name: <br>
+            <input type="text" value.two-way="editablePlayerLocation">
+          </label>
+        </div>
+        <div class="content-main" ref="mainContentContainer">
+          <canvas class="field-canvas" ref="fieldCanvas" width.two-way="canvas_width" height="${canvas_height}" ></canvas>
+        </div>
+      </div>
+      <div class="bottom"></div>
+    </div>
+  </section>
+</template>
