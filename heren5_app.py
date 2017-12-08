@@ -269,7 +269,6 @@ def MakeFoxFromJson(d):
             return "overwritten data"
 
 
-
 @app.route('/')
 def login():
     s = app.static_folder
