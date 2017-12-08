@@ -99,9 +99,9 @@ export class Game {
 
 
     StartPollingData() {
-        setTimeout(this.StartPollingData.bind(this), 5000);
+        setTimeout(this.StartPollingData.bind(this), 30000);
         const t = Date.now() - this.lastRequest;
-        if (this.lastRequest === 0 || t >= 5000) {
+        if (this.lastRequest === 0 || t >= 30000) {
             this.doRequest();
         }
     }
@@ -123,7 +123,7 @@ export class Game {
         let obj = JSON.parse(txt);
         this.PlayerType = obj["type"];
         this.targetsUpdatedCallBack(obj["targets"]);
-        setTimeout(this.doRequest.bind(this), 1000)
+        setTimeout(this.doRequest.bind(this), 500)
     }
     constructor(app?: App) {
         this.initialize();
