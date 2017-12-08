@@ -31,6 +31,18 @@ class Group(db.Model):
     def __repr__(self):
         return '<User %r>' % self.username
 
+    def to_json_dict(self):
+        d = {
+            "name": self.username,
+            "lat": self.latitude,
+            "lon": self.longitude,
+            "type": self.type,
+            "started": self.started,
+            "start_lat": self.start_latitude,
+            "start_lon": self.start_longitude
+            }
+        return d
+
 #db.create_all()
 #g = Group(username="testname", longitude=0, latitude=0, type=False)
 #db.session.add(g)
@@ -76,6 +88,34 @@ def ForceStop(name):
         return "Forced {0} to stop playing".format(olddata.username)
     return "{0} not found".format(name)
 
+
+def create_or_update_group(name, type, started, start_lat, start_lon,
+                           current_latitude=None, current_longitude=None, **kwargs):
+    olddata = Group.query.filter_by(username=name).first()
+    if olddata is not None:
+        olddata.started = started
+        olddata.type = type
+        olddata.start_latitude = start_lat
+        olddata.start_longitude = start_lon
+        if current_latitude is not None:
+            olddata.latitude = current_latitude
+        if current_longitude is not None:
+            olddata.longitude = current_longitude
+        for a, v in kwargs:
+            setattr(olddata, a, v)
+        return False
+    else:
+        if current_longitude is None:
+            current_longitude = 0
+        if current_latitude is None:
+            current_latitude = 0
+        g = Group(username=name, latitude=current_latitude, longitude=current_longitude, type=type,
+                  started=started, start_latitude=start_lat, start_longitude=start_lon, **kwargs)
+        db.session.add(g)
+        return True
+
+
+
 def AddGroup(name, start_lat, start_lon):
     try:
         start_lat = float(start_lat)
@@ -84,35 +124,14 @@ def AddGroup(name, start_lat, start_lon):
         print(e)
         return str(e)
     else:
-        olddata = Group.query.filter_by(username=name).first()
-        if start_lat is None:
-            started = True
-        else:
-            started = False
-        if olddata is not None:
-            olddata.latitude = 0
-            olddata.longitude = 0
-            olddata.type = False
-            if started:
-                olddata.started = True
-            else:
-                if start_lat is not None:
-                    olddata.start_latitude = start_lat
-                if start_lat is not None:
-                    olddata.start_longitude = start_lon
-                started = False
-            db.session.commit()
-            return "reset {0}".format(name)
-        else:
-            if start_lat is None:
-                start_lat = 0
-            if start_lat is not None:
-                start_lon = 0
-            g = Group(username=name, longitude=0, latitude=0, type=False,
-                      started=started, start_latitude=start_lat, start_longitude=start_lon)
-            db.session.add(g)
-            db.session.commit()
+        started = False
+        action_done = create_or_update_group(name, False, started, start_lat, start_lon)
+        db.session.commit()
+        if action_done:
             return "added {0}".format(name)
+        else:
+            return "reset {0}".format(name)
+
 
 def DeleteGroup(name):
     olddata = Group.query.filter_by(username=name).first()
@@ -167,6 +186,23 @@ def ForceSetPosition(name, lat, lon):
         return "Updated {0} position".format(olddata.username)
     return "{0} not found".format(name)
 
+
+def SetStartPosition(name, lat, lon):
+    olddata = Group.query.filter_by(username=name).first()
+    if olddata is not None:
+        try:
+            latval = float(lat)
+            lonval = float(lon)
+        except ValueError as e:
+            return str(e)
+        else:
+            olddata.start_latitude = latval
+            olddata.start_longitude = lonval
+            db.session.commit()
+        return "Updated {0} position".format(olddata.username)
+    return "{0} not found".format(name)
+
+
 def DistHaversine(lat1, lon1, lat2, lon2):
     R = 6371000
     lat1 = math.radians(lat1)
@@ -183,6 +219,7 @@ def DistHaversine(lat1, lon1, lat2, lon2):
 
     return d
 
+
 def GetMinDistToOthers(group, others):
     dis = math.inf
     for other_group in others:
@@ -193,11 +230,43 @@ def GetMinDistToOthers(group, others):
             dis = d
     return dis
 
+
 def OrderAllGroupsBySparsity():
     groups = Group.query.all()
     v = [(group.username, GetMinDistToOthers(group, groups)) for group in groups]
     v.sort(key=lambda i: i[1])
     return v
+
+
+def AllData():
+    groups = Group.query.all()
+    return [g.to_json_dict() for g in groups]
+
+
+def MakeFoxFromJson(d):
+    try:
+        name = d["name"]
+        lat = d.get("lat", None)
+        if lat is not None:
+            lat = float(lat)
+        lon = d.get("lon", None)
+        if lon is not None:
+            lon = float(lon)
+        type = d["type"]
+        started = d["started"]
+        start_lat = float(d["start_lat"])
+        start_lon = float(d["start_lon"])
+    except KeyError as e:
+        return "bad json: ({0})".format(str(e))
+    except ValueError as e:
+        return "bad json: ({0})".format(str(e))
+    else:
+        ret = create_or_update_group(name, type, started, start_lat, start_lon, lat, lon)
+        db.session.commit()
+        if ret:
+            return "Added new data"
+        else:
+            return "overwritten data"
 
 
 
@@ -251,8 +320,26 @@ def DoAdminTasks():
                 name = form["name"]
                 lat = form["lat"]
                 lon = form["lon"]
-                sparse = ForceSetPosition(name, lat, lon)
-                return jsonify(sparse)
+                return ForceSetPosition(name, lat, lon)
+            elif cmd.lower() == "set-start-position":
+                name = form["name"]
+                lat = form["lat"]
+                lon = form["lon"]
+                return SetStartPosition(name, lat, lon)
+            elif cmd.lower() == "make-group-from-json":
+                json_str = form["json"]
+                d = json.loads(json_str)
+                return MakeFoxFromJson(d)
+            elif cmd.lower() == "make-multiple-from-json":
+                json_str = form["json"]
+                l = json.loads(json_str)
+                ret = ""
+                for elem in l:
+                    ret += MakeFoxFromJson(elem) + "\n"
+                return ret
+            elif cmd.lower() == "get-all-data":
+                groups = AllData()
+                return jsonify(groups)
             return "Command unknown"
         except KeyError:
             print(form)
@@ -275,7 +362,7 @@ def updateData(group, form):
         pass
     else:
         start_dis = DistHaversine(group.latitude, group.longitude, group.start_latitude, group.start_longitude)
-        if start_dis < 10:
+        if start_dis < 30:
             group.started = True
             db.session.commit()
 
@@ -288,6 +375,7 @@ def loadPlayerDataNew(userid):
         return jsonify(type=typestr, targets=[])
     if request.method == 'POST':
         updateData(group, request.form)
+    foxes = []
     try:
         idx = GetType(userid)
         if idx:
@@ -299,7 +387,6 @@ def loadPlayerDataNew(userid):
     except KeyError:
         typestr = "!!!Naam niet bekent!!!"
     if group.started:
-        foxes = []
         targetPositions = [{"name": fox.username, "pos": [fox.latitude, fox.longitude]} for fox in foxes]
     else:
         typestr += "!!!Ga naar start positie!!! (afstand: {0} meter)".format(
