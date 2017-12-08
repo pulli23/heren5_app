@@ -1,0 +1,35 @@
+var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+};
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
+define(["require", "exports", "aurelia-dependency-injection"], function (require, exports, aurelia_dependency_injection_1) {
+    "use strict";
+    Object.defineProperty(exports, "__esModule", { value: true });
+    let App = class App {
+        constructor() {
+        }
+        configureRouter(config, router) {
+            config.title = 'Heren 5';
+            config.map([
+                { route: ['welcome'], name: 'welcome', moduleId: './welcome', nav: true, title: 'Welcome' },
+                { route: ['position'], name: 'position', moduleId: './positions', nav: true, title: 'positions',
+                    settings: { data: 'blah' } },
+                { route: 'test', redirect: 'http://www.google.com', nav: true, title: 'test' },
+                { route: ['', 'ivossenjacht'], name: "game", moduleId: './game', nav: true, title: 'IVossenJacht' }
+            ]);
+            this.router = router;
+        }
+    };
+    App = __decorate([
+        aurelia_dependency_injection_1.singleton(),
+        __metadata("design:paramtypes", [])
+    ], App);
+    exports.App = App;
+});
+
+//# sourceMappingURL=app.js.map

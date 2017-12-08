@@ -1,0 +1,1 @@
+{"version":3,"file":"loader.js","sourceRoot":"","sources":["../../../src/loader.ts"],"names":[],"mappings":";;;IAEA;QACE,YAAY,UAA4B;QAExC,CAAC;KACF;IAJD,4BAIC","sourcesContent":["import {CanvasController} from \"./canvas-controller\";\n\nexport class loadData {\n  constructor(controller: CanvasController) {\n    //this.controller =\n  }\n}\n"]}

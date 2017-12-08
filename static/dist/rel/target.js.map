@@ -1,0 +1,1 @@
+{"version":3,"sources":["../../src/target.ts"],"names":[],"mappings":";;;IAIA;QAII,YAAY,IAAY,EAAE,QAAgB,EAAE,SAAiB;YACzD,IAAI,CAAC,IAAI,GAAG,IAAI,CAAC;YACjB,IAAI,CAAC,QAAQ,GAAG,QAAQ,CAAC;YACzB,IAAI,CAAC,SAAS,GAAG,SAAS,CAAC;QAC/B,CAAC;KAEJ;IAVD,wBAUC","file":"target.js","sourceRoot":"/src"}
