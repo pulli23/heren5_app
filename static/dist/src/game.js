@@ -17,12 +17,14 @@ define(["require", "exports", "aurelia-framework", "./my-custom-events-handler",
     let Game = Game_1 = class Game {
         constructor(app) {
             this.PlayerType = "Jager";
-            this.myGroupName = "test";
+            this.ExtraInfo = "";
+            this._myGroupName = "Geef naam";
             this.default_width = 200;
             this.default_height = 200;
             this.initialize();
+            this.nextRequestTimer = null;
             this._gpsworking = false;
-            navigator.geolocation.watchPosition(this.updateLocation.bind(this), this.errorLocation.bind(this));
+            navigator.geolocation.watchPosition(this.updateLocation.bind(this), this.errorLocation.bind(this), { enableHighAccuracy: true });
             this._myLongitude = 0;
             this._myLatitude = 0;
             this._myHeading = 0;
@@ -48,6 +50,16 @@ define(["require", "exports", "aurelia-framework", "./my-custom-events-handler",
             }, this);
             this.onPropertyChangedEvent.AddMethod(this.PropertyChangedCallBack, this);
             this.canvas_controller.onPropertyChangedEvent.AddMethod(this.CanvasChangedCallBack, this);
+        }
+        get myGroupName() {
+            return this._myGroupName;
+        }
+        set myGroupName(value) {
+            this._myGroupName = value;
+            const t = Date.now() - this.lastRequest;
+            if (this.lastRequest === 0 || t > 25000) {
+                this.doRequest();
+            }
         }
         get GPSWorking() {
             return this._gpsworking;
@@ -84,6 +96,17 @@ define(["require", "exports", "aurelia-framework", "./my-custom-events-handler",
             this.onPropertyChangedEvent.Invoke(this, new my_custom_events_handler_1.PropertyChangedEventArgs("myHeading", old, value));
             this.north_arrow.direction = Math.PI * 1.5 - this._myHeading;
         }
+        get myAccuracy() {
+            return this._myAccuracy;
+        }
+        set myAccuracy(value) {
+            const old = this._myAccuracy;
+            if (old === value) {
+                return;
+            }
+            this._myAccuracy = value;
+            this.onPropertyChangedEvent.Invoke(this, new my_custom_events_handler_1.PropertyChangedEventArgs("myAccuracy", old, value));
+        }
         get myLatitude() {
             return this._myLatitude;
         }
@@ -107,15 +130,16 @@ define(["require", "exports", "aurelia-framework", "./my-custom-events-handler",
             this.onPropertyChangedEvent.Invoke(this, new my_custom_events_handler_1.PropertyChangedEventArgs("myLongitude", old, value));
         }
         StartPollingData() {
-            setTimeout(this.StartPollingData.bind(this), 30000);
+            setTimeout(this.StartPollingData.bind(this), 20000);
             const t = Date.now() - this.lastRequest;
-            if (this.lastRequest === 0 || t >= 30000) {
+            if (this.lastRequest === 0 || t > 15000) {
+                console.log("fall back, should only happen once");
                 this.doRequest();
             }
         }
         doRequest() {
             this.myRequest = new XMLHttpRequest();
-            let route = "/ivossenjacht/" + this.myGroupName;
+            let route = "/ivossenjacht/" + this._myGroupName;
             this.myRequest.addEventListener("load", this.reqListener.bind(this));
             this.myRequest.open("POST", route);
             this.myRequest.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
@@ -128,8 +152,13 @@ define(["require", "exports", "aurelia-framework", "./my-custom-events-handler",
             const txt = this.myRequest.response;
             let obj = JSON.parse(txt);
             this.PlayerType = obj["type"];
+            this.ExtraInfo = obj["extra"];
             this.targetsUpdatedCallBack(obj["targets"]);
-            setTimeout(this.doRequest.bind(this), 500);
+            if (this.nextRequestTimer != null) {
+                clearTimeout(this.nextRequestTimer);
+                this.nextRequestTimer = null;
+            }
+            this.nextRequestTimer = setTimeout(this.doRequest.bind(this), 3000);
         }
         initialize() {
             this.onAttach = new my_custom_events_handler_1.CustomEventHandler();
@@ -259,11 +288,15 @@ define(["require", "exports", "aurelia-framework", "./my-custom-events-handler",
             }
             this.target_arrow.visible = true;
             let dir = Game_1.bearing(this.myLatitude, this.myLongitude, this.closest_target.latitude, this.closest_target.longitude);
-            this.target_arrow.direction = this.myHeading + Math.PI * 1.5 - dir;
+            console.log([Game_1.toDeg(dir),
+                Game_1.distHaversine(this.myLatitude, this.myLongitude, this.closest_target.latitude, this.closest_target.longitude)]);
+            let val = this.myHeading + Math.PI * 1.5 + dir;
+            this.target_arrow.direction = val;
         }
         updateLocation(position) {
             this.myLatitude = position.coords.latitude;
             this.myLongitude = position.coords.longitude;
+            this.myAccuracy = position.coords.accuracy;
             if (position.coords.heading != null) {
                 this.myHeading = Game_1.toRad(position.coords.heading);
             }
@@ -305,6 +338,10 @@ define(["require", "exports", "aurelia-framework", "./my-custom-events-handler",
             return d;
         }
         static bearing(lat1, lon1, lat2, lon2) {
+            lat1 = lat1 * Math.PI / 180;
+            lat2 = lat2 * Math.PI / 180;
+            lon1 = lon1 * Math.PI / 180;
+            lon2 = lon2 * Math.PI / 180;
             const y = Math.sin(lon2 - lon1) * Math.cos(lat2);
             const x = Math.cos(lat1) * Math.sin(lat2) -
                 Math.sin(lat1) * Math.cos(lat2) * Math.cos(lon2 - lon1);

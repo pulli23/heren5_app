@@ -69,7 +69,7 @@ def MakeHunter(name):
     if olddata is not None:
         olddata.type = False
         db.session.commit()
-        return "Made {0} a hunter".format(olddata.username)
+        return "Made {0} a hunter".format(name)
     return "{0} not found".format(name)
 
 def ForceStart(name):
@@ -218,6 +218,24 @@ def DistHaversine(lat1, lon1, lat2, lon2):
     d = R * c
 
     return d
+
+
+def Bearing(lat1, lon1, lat2, lon2):
+    R = 6371000
+    lat1 = math.radians(lat1)
+    lat2 = math.radians(lat2)
+    lon1 = math.radians(lon1)
+    lon2 = math.radians(lon2)
+    y = math.sin(lon2 - lon1) * math.cos(lat2);
+    x = math.cos(lat1)*math.sin(lat2) - \
+        math.sin(lat1)*math.cos(lat2)*math.cos(lon2-lon1);
+    print([lat1, lon1, lat2, lon2])
+
+    bearing = math.atan2(y, x)
+    print(bearing)
+    return bearing
+
+
 
 
 def GetMinDistToOthers(group, others):
@@ -369,6 +387,8 @@ def updateData(group, form):
 @app.route('/ivossenjacht/<userid>', methods=["POST", "GET"])
 def loadPlayerDataNew(userid):
     group = GetGroupEntry(userid)
+    typestr = ""
+    extra_info = ""
     if not group:
         typestr = "!!!Naam niet bekent!!!"
         return jsonify(type=typestr, targets=[])
@@ -379,24 +399,24 @@ def loadPlayerDataNew(userid):
         idx = GetType(userid)
         if idx:
             foxes = GetAllHunters()
-            typestr = "Vos (pijl is dichtsbijzijnde jager)"
+            typestr = "Vos"
+            extra_info += "Pijl is dichtsbijzijnde jager"
         else:
             foxes = GetAllFoxes()
-            typestr = "Jager (pijl is dichtsbijzijnde vos)"
+            typestr = "Jager"
+            extra_info += "Pijl is dichtsbijzijnde vos"
     except KeyError:
-        typestr = "!!!Naam niet bekent!!!"
+        idx = None
+        extra_info = "!!!Data corrupt, vraag om reset!!!"
     if group.started:
         targetPositions = [{"name": fox.username, "pos": [fox.latitude, fox.longitude]} for fox in foxes]
     else:
-        typestr += "!!!Ga naar start positie!!! (afstand: {0} meter)".format(
+        if idx is not None:
+            extra_info = ""
+        extra_info += " !!!Ga naar start positie!!! (afstand: {0} meter)".format(
             DistHaversine(group.latitude, group.longitude, group.start_latitude, group.start_longitude))
         targetPositions = [{"name": "start", "pos": [group.start_latitude, group.start_longitude]}]
-
-
-    r = jsonify(type=typestr, targets=[{"name": "bevers", "pos": [0, 0]},
-                                       {"name": "n01", "pos": [51.999598, 4.379677]},
-                                       {"name": "alis", "pos": [51.994651, 4.387278]}])
-    ret = jsonify(type=typestr, targets=targetPositions)
+    ret = jsonify(type=typestr, extra=extra_info, targets=targetPositions)
     return ret
 
 

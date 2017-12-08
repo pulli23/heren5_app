@@ -17,6 +17,17 @@ function findClosestAncestorByClass(el: Element, cls: string) {
 
 @inject(App)
 export class Game {
+    get myGroupName(): string {
+        return this._myGroupName;
+    }
+
+    set myGroupName(value: string) {
+        this._myGroupName = value;
+        const t = Date.now() - this.lastRequest;
+        if (this.lastRequest === 0 || t > 25000) {
+            this.doRequest();
+        }
+    }
     public get GPSWorking(): boolean {
         return this._gpsworking;
     }
@@ -52,6 +63,16 @@ export class Game {
         this.north_arrow.direction = Math.PI * 1.5 - this._myHeading;
     }
 
+    get myAccuracy(): number {
+        return this._myAccuracy;
+    }
+    set myAccuracy(value: number) {
+        const old = this._myAccuracy;
+        if (old === value) {return;}
+        this._myAccuracy = value;
+        this.onPropertyChangedEvent.Invoke(this, new PropertyChangedEventArgs("myAccuracy", old, value));
+    }
+
     get myLatitude(): number {
         return this._myLatitude;
     }
@@ -73,16 +94,19 @@ export class Game {
     }
 
     public PlayerType: string = "Jager";
-    public myGroupName: string = "test";
     public fieldnames: Array<string>;
     public onAttach: CustomEventHandler<Game, boolean>;
     public onDetach: CustomEventHandler<Game, boolean>;
     public onPropertyChangedEvent: CustomEventHandler<Game, PropertyChangedEventArgs>;
+    public ExtraInfo: string = "";
+
     private _myLongitude: number;
     private _myLatitude: number;
     private _myHeading: number;
+    private _myAccuracy: number;
     private lastRequest: number;
 
+    private _myGroupName: string = "Geef naam";
     private _isAttached: boolean;
     private default_width: number = 200;
     private default_height: number = 200;
@@ -96,19 +120,21 @@ export class Game {
     private targets: Array<Target>;
     private _closest_target: Target;
     private myRequest;
+    private nextRequestTimer: number;
 
 
     StartPollingData() {
-        setTimeout(this.StartPollingData.bind(this), 30000);
+        setTimeout(this.StartPollingData.bind(this), 20000);
         const t = Date.now() - this.lastRequest;
-        if (this.lastRequest === 0 || t >= 30000) {
+        if (this.lastRequest === 0 || t > 15000) {
+            console.log("fall back, should only happen once");
             this.doRequest();
         }
     }
 
     doRequest() {
         this.myRequest = new XMLHttpRequest();
-        let route = "/ivossenjacht/" + this.myGroupName;
+        let route = "/ivossenjacht/" + this._myGroupName;
         this.myRequest.addEventListener("load", this.reqListener.bind(this));
         this.myRequest.open("POST", route);
         this.myRequest.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
@@ -122,14 +148,24 @@ export class Game {
         const txt = this.myRequest.response;
         let obj = JSON.parse(txt);
         this.PlayerType = obj["type"];
+        this.ExtraInfo = obj["extra"];
         this.targetsUpdatedCallBack(obj["targets"]);
-        setTimeout(this.doRequest.bind(this), 500)
+        if (this.nextRequestTimer != null) {
+            clearTimeout(this.nextRequestTimer);
+            this.nextRequestTimer = null;
+        }
+        this.nextRequestTimer = setTimeout(this.doRequest.bind(this), 3000)
     }
     constructor(app?: App) {
         this.initialize();
+        this.nextRequestTimer = null;
         this._gpsworking = false;
         //navigator.geolocation.getCurrentPosition(this.setLocation.bind(this), this.locationError.bind(this));
-        navigator.geolocation.watchPosition(this.updateLocation.bind(this), this.errorLocation.bind(this));
+        navigator.geolocation.watchPosition(
+            this.updateLocation.bind(this),
+            this.errorLocation.bind(this),
+            {enableHighAccuracy: true}
+        );
 
         this._myLongitude = 0;
         this._myLatitude = 0;
@@ -296,12 +332,16 @@ export class Game {
         this.target_arrow.visible = true;
         let dir = Game.bearing(this.myLatitude, this.myLongitude,
             this.closest_target.latitude, this.closest_target.longitude);
-        this.target_arrow.direction = this.myHeading + Math.PI * 1.5 - dir;
+        console.log([Game.toDeg(dir),
+            Game.distHaversine(this.myLatitude, this.myLongitude, this.closest_target.latitude, this.closest_target.longitude)]);
+        let val = this.myHeading + Math.PI * 1.5 + dir;
+        this.target_arrow.direction = val;
     }
 
     private updateLocation(position: Position) {
         this.myLatitude = position.coords.latitude;
         this.myLongitude = position.coords.longitude;
+        this.myAccuracy = position.coords.accuracy;
         if (position.coords.heading != null) {
             this.myHeading = Game.toRad(position.coords.heading);
         }
@@ -334,9 +374,9 @@ export class Game {
     private static distHaversine(lat1: number, lon1: number, lat2: number, lon2: number): number {
         const R = 6371e3; // earth's mean radius in m
         lat1 = lat1 * Math.PI/180;
-        lat2 = lat2 * Math.PI/180
-        lon1 = lon1 * Math.PI/180
-        lon2 = lon2 * Math.PI/180
+        lat2 = lat2 * Math.PI/180;
+        lon1 = lon1 * Math.PI/180;
+        lon2 = lon2 * Math.PI/180;
         const dLat = (lat2 - lat1);
         const dLon = (lon2 - lon1);
 
@@ -349,10 +389,16 @@ export class Game {
     }
 
     private static bearing(lat1: number, lon1: number, lat2: number, lon2: number): number {
+        lat1 = lat1 * Math.PI/180;
+        lat2 = lat2 * Math.PI/180;
+        lon1 = lon1 * Math.PI/180;
+        lon2 = lon2 * Math.PI/180;
         const y = Math.sin(lon2 - lon1) * Math.cos(lat2);
         const x = Math.cos(lat1)*Math.sin(lat2) -
                   Math.sin(lat1)*Math.cos(lat2)*Math.cos(lon2-lon1);
+        //console.log([lat1, lon1, lat2, lon2]);
         const bearing = Math.atan2(y, x);
+        //console.log(bearing * 180/Math.PI);
         return bearing;
     }
 
