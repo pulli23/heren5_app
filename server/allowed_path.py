@@ -8,6 +8,7 @@ class AllowedPaths(dict):
         self["styles"] = True
         self["dist"] = {}
         self["dist"]["rel"] = True
+        self["dist"]["src"] = True
         self["config.js"] = True
         self["public_data"] = True
 

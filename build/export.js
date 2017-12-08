@@ -3,9 +3,9 @@
 // for production.
 module.exports = {
     'list': [
-        'index.html',
-        'config.js',
-        'favicon.ico',
+        'static/index.html',
+        'static/config.js',
+        'static/favicon.ico',
         'LICENSE',
         'heren5_app.py',
         "static/jspm_packages/npm/bluebird@3.4.1/js/browser/bluebird.min.js",

@@ -6,6 +6,14 @@ export interface IDrawable {
 }
 
 export abstract class CanvasObject implements IDrawable {
+  private _visible: boolean;
+
+  public get visible(): boolean {
+    return this._visible;
+  }
+  public set visible(value: boolean) {
+    this._visible = value;
+  }
 
   public get x(): number {
     return this.position.x;
@@ -24,6 +32,7 @@ export abstract class CanvasObject implements IDrawable {
   constructor(controller: CanvasController, x: number, y: number) {
     this.controller = controller;
     this.position = new Point(x,y);
+    this._visible = true;
   }
 
   public abstract drawMe(ctx: CanvasRenderingContext2D);

@@ -25,8 +25,8 @@ export class Player extends CanvasObject {
         this._loc = 10;
     }
 
-    public setLocation(position) {
-        this._loc = position.coords.latitude
+    public setLocation(position: Position) {
+        this._loc = position.coords.latitude;
     }
 
     public locationError(failure) {

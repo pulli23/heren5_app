@@ -1,60 +1,333 @@
+import json
 import os
 from functools import lru_cache
 
 import flask
-from flask import Flask, render_template
+import math
+from flask import Flask, render_template, jsonify, request
+from flask_sqlalchemy import SQLAlchemy
 
 from server import allowed_path
-
-app = Flask(__name__, static_folder="static", template_folder="server/templates")
-
-
 allowed_paths = allowed_path.AllowedPaths()
 
 
 
-#@app.route('/jspm_packages/<path>')
-#def loadjs(path):
+app = Flask(__name__, static_folder="static", template_folder="server/templates")
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///./server/players.db'
+db = SQLAlchemy(app)
+
+class Group(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(120), unique=True, nullable=False)
+    latitude = db.Column(db.Float, nullable=False)
+    longitude = db.Column(db.Float, nullable=False)
+    type = db.Column(db.Boolean, nullable=False)
+    powerups = db.Column(db.String(), nullable=True)
+    updated = db.Column(db.Date, nullable=False)
+    started = db.Column(db.Boolean, nullable=False)
+    start_latitude = db.Column(db.Float, nullable=False)
+    start_longitude = db.Column(db.Float, nullable=False)
+
+    def __repr__(self):
+        return '<User %r>' % self.username
+
+#db.create_all()
+#g = Group(username="testname", longitude=0, latitude=0, type=False)
+#db.session.add(g)
+#db.session.commit()
+# @app.route('/jspm_packages/<path>')
+# def loadjs(path):
 #    return flask.send_from_directory("", path)
+
+
+
+def GetGroupEntry(name):
+    return Group.query.filter_by(username=name).first()
+
+def MakeFox(name):
+    olddata = Group.query.filter_by(username=name).first()
+    if olddata is not None:
+        olddata.type = True
+        db.session.commit()
+        return "Made {0} a fox".format(olddata.username)
+    return "{0} not found".format(name)
+
+def MakeHunter(name):
+    olddata = Group.query.filter_by(username=name).first()
+    if olddata is not None:
+        olddata.type = False
+        db.session.commit()
+        return "Made {0} a hunter".format(olddata.username)
+    return "{0} not found".format(name)
+
+def ForceStart(name):
+    olddata = Group.query.filter_by(username=name).first()
+    if olddata is not None:
+        olddata.started = True
+        db.session.commit()
+        return "Forced {0} to start playing".format(olddata.username)
+    return "{0} not found".format(name)
+
+def ForceStop(name):
+    olddata = Group.query.filter_by(username=name).first()
+    if olddata is not None:
+        olddata.started = False
+        db.session.commit()
+        return "Forced {0} to stop playing".format(olddata.username)
+    return "{0} not found".format(name)
+
+def AddGroup(name, start_lat, start_lon):
+    try:
+        start_lat = float(start_lat)
+        start_lon = float(start_lon)
+    except ValueError as e:
+        print(e)
+        return str(e)
+    else:
+        olddata = Group.query.filter_by(username=name).first()
+        if start_lat is None:
+            started = True
+        else:
+            started = False
+        if olddata is not None:
+            olddata.latitude = 0
+            olddata.longitude = 0
+            olddata.type = False
+            if started:
+                olddata.started = True
+            else:
+                if start_lat is not None:
+                    olddata.start_latitude = start_lat
+                if start_lat is not None:
+                    olddata.start_longitude = start_lon
+                started = False
+            db.session.commit()
+            return "reset {0}".format(name)
+        else:
+            if start_lat is None:
+                start_lat = 0
+            if start_lat is not None:
+                start_lon = 0
+            g = Group(username=name, longitude=0, latitude=0, type=False,
+                      started=started, start_latitude=start_lat, start_longitude=start_lon)
+            db.session.add(g)
+            db.session.commit()
+            return "added {0}".format(name)
+
+def DeleteGroup(name):
+    olddata = Group.query.filter_by(username=name).first()
+    if olddata is not None:
+        db.session.delete(olddata)
+        db.session.commit()
+        return "deleted {0}".format(olddata.username)
+    return "{0} not found".format(name)
+
+def SetFoxes(names):
+    ret = ""
+    all_data = Group.query.all()
+    for name in all_data:
+        MakeHunter(name)
+    for name in names:
+        ret += MakeFox(name) + '\n'
+    return ret
+
+def SetPosition(groupID, latitude, longitude):
+    olddata = groupID
+    olddata.latitude = latitude
+    olddata.longitude = longitude
+    db.session.commit()
+
+def GetAllHunters():
+    dat = Group.query.filter_by(type=False)
+    return dat
+
+def GetAllFoxes():
+    dat = Group.query.filter_by(type=True)
+    return dat
+
+def GetType(name):
+    olddata = Group.query.filter_by(username=name).first()
+    if olddata is not None:
+        return olddata.type
+    raise KeyError("{0} not found".format(name))
+
+
+def ForceSetPosition(name, lat, lon):
+    olddata = Group.query.filter_by(username=name).first()
+    if olddata is not None:
+        try:
+            latval = float(lat)
+            lonval = float(lon)
+        except ValueError as e:
+            return str(e)
+        else:
+            olddata.latitude = latval
+            olddata.longitude = lonval
+            db.session.commit()
+        return "Updated {0} position".format(olddata.username)
+    return "{0} not found".format(name)
+
+def DistHaversine(lat1, lon1, lat2, lon2):
+    R = 6371000
+    lat1 = math.radians(lat1)
+    lat2 = math.radians(lat2)
+    lon1 = math.radians(lon1)
+    lon2 = math.radians(lon2)
+    dLat = (lat2 - lat1)
+    dLon = (lon2 - lon1)
+    a = math.sin(dLat / 2) * math.sin(dLat / 2) + \
+        math.cos(lat1) * math.cos(lat2) * math.sin(dLon / 2) * math.sin(dLon / 2)
+
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    d = R * c
+
+    return d
+
+def GetMinDistToOthers(group, others):
+    dis = math.inf
+    for other_group in others:
+        if other_group is group:
+            continue
+        d = DistHaversine(group.latitude, group.longitude, other_group.latitude, other_group.longitude)
+        if d < dis:
+            dis = d
+    return dis
+
+def OrderAllGroupsBySparsity():
+    groups = Group.query.all()
+    v = [(group.username, GetMinDistToOthers(group, groups)) for group in groups]
+    v.sort(key=lambda i: i[1])
+    return v
+
 
 
 @app.route('/')
 def login():
-    SITE_ROOT = os.path.realpath(os.path.dirname(__file__))
-    # u = os.path.join(SITE_ROOT, "/data.txt")
-    u = flask.url_for("static", filename="index.html")
-    return flask.send_file("index.html")
-    if m == 'POST':
-        dat = LoadData(u)
-        if "input" in d and d["input"].lower() == dat["login"].lower():
-            r = flask.Response(dat["site"])
-            r.status_code = 200
-            return r
-        r = flask.Response("/sad")
-        r.status_code = 401
-        return r
-    else:
-        u = os.path.join(SITE_ROOT, "index.html")
-        r = flask.make_response()
-        return flask.send_file(u)
-        # return render_template('index.html')
+    s = app.static_folder
+    fname2 = os.path.join(s, "index.html")
+    f = flask.send_file(fname2)
+    return f
+
 
 @app.route('/sad')
 def sad():
     return render_template('sad.html')
 
+
+@app.route('/ivossenjacht/admin', methods=["POST"])
+def DoAdminTasks():
+    if request.method == 'POST':
+        form = request.form
+        try:
+            cmd = form["cmd"]
+            if cmd.lower() == "create":
+                name = form["name"]
+                lat = form["lat"]
+                lon = form["lon"]
+                return AddGroup(name, lat, lon)
+            elif cmd.lower() == "delete":
+                name = form["name"]
+                return DeleteGroup(name)
+            elif cmd.lower() == "make-fox":
+                name = form["name"]
+                return MakeFox(name)
+            elif cmd.lower() == "make-hunter":
+                name = form["name"]
+                return MakeHunter(name)
+            elif cmd.lower() == "force-start":
+                name = form["name"]
+                return ForceStart(name)
+            elif cmd.lower() == "force-stop":
+                name = form["name"]
+                return ForceStop(name)
+            elif cmd.lower() == "set-foxes":
+                names = form["names"]
+                dat = json.loads(names)
+                return SetFoxes(dat)
+            elif cmd.lower() == "get-distances":
+                sparse = OrderAllGroupsBySparsity()
+                return jsonify(sparse)
+            elif cmd.lower() == "set-position":
+                name = form["name"]
+                lat = form["lat"]
+                lon = form["lon"]
+                sparse = ForceSetPosition(name, lat, lon)
+                return jsonify(sparse)
+            return "Command unknown"
+        except KeyError:
+            print(form)
+        r = Flask.response_class()
+        r.status_code = 501
+        r.data = "Bad POST command"
+        return r
+
+
+def updateData(group, form):
+    try:
+        lat = float(form["lat"])
+        lon = float(form["lon"])
+        SetPosition(group, lat, lon)
+    except ValueError as e:
+        print(e)
+        pass
+    except KeyError as e:
+        print(e)
+        pass
+    else:
+        start_dis = DistHaversine(group.latitude, group.longitude, group.start_latitude, group.start_longitude)
+        if start_dis < 10:
+            group.started = True
+            db.session.commit()
+
+
+@app.route('/ivossenjacht/<userid>', methods=["POST", "GET"])
+def loadPlayerDataNew(userid):
+    group = GetGroupEntry(userid)
+    if not group:
+        typestr = "!!!Naam niet bekent!!!"
+        return jsonify(type=typestr, targets=[])
+    if request.method == 'POST':
+        updateData(group, request.form)
+    try:
+        idx = GetType(userid)
+        if idx:
+            foxes = GetAllHunters()
+            typestr = "Vos (pijl is dichtsbijzijnde jager)"
+        else:
+            foxes = GetAllFoxes()
+            typestr = "Jager (pijl is dichtsbijzijnde vos)"
+    except KeyError:
+        typestr = "!!!Naam niet bekent!!!"
+    if group.started:
+        foxes = []
+        targetPositions = [{"name": fox.username, "pos": [fox.latitude, fox.longitude]} for fox in foxes]
+    else:
+        typestr += "!!!Ga naar start positie!!! (afstand: {0} meter)".format(
+            DistHaversine(group.latitude, group.longitude, group.start_latitude, group.start_longitude))
+        targetPositions = [{"name": "start", "pos": [group.start_latitude, group.start_longitude]}]
+
+
+    r = jsonify(type=typestr, targets=[{"name": "bevers", "pos": [0, 0]},
+                                       {"name": "n01", "pos": [51.999598, 4.379677]},
+                                       {"name": "alis", "pos": [51.994651, 4.387278]}])
+    ret = jsonify(type=typestr, targets=targetPositions)
+    return ret
+
+
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
 def loadjs(path):
+    r = app.root_path
+    s = app.static_folder
     if allowed_paths.is_allowed(path):
-        r = app.root_path
-        s = app.static_folder
         fname2 = os.path.join(s, path)
         f = flask.send_file(fname2)
         return f
-    return path #flask.send_from_directory("", path)
+    fname2 = os.path.join(s, path)
+    f = flask.send_file(path)
+    return f  # flask.send_from_directory("", path)
 
-@lru_cache(4)
+
 def LoadData(fname):
     out = {}
     with open(fname) as f:
@@ -64,8 +337,6 @@ def LoadData(fname):
         out = {k.strip(): "=".join(v).strip() for k, *v in t}
         print(out)
     return out
-
-
 
 
 if __name__ == '__main__':

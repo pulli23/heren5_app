@@ -102,3 +102,4 @@ private_data/*
 /build/reports/
 !/build/
 !/export/*
+export/static.zip

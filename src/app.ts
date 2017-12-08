@@ -16,9 +16,10 @@ export class App {
         config.title = 'Heren 5';
         config.map([
             { route: [ 'welcome'], name: 'welcome', moduleId: './welcome', nav: true, title: 'Welcome'},
-            { route: ['', 'position'], name: 'position', moduleId: './positions', nav: true, title: 'positions',
+            { route: ['position'], name: 'position', moduleId: './positions', nav: true, title: 'positions',
                 settings: {data: 'blah'}},
-            { route: 'test', redirect: 'http://www.google.com', nav: true, title: 'test' }
+            { route: 'test', redirect: 'http://www.google.com', nav: true, title: 'test' },
+            { route: ['', 'ivossenjacht'], name:"game", moduleId: './game', nav: true, title: 'IVossenJacht' }
         ]);
         this.router = router;
     }

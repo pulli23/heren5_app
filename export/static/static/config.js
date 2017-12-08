@@ -2,7 +2,7 @@ System.config({
   defaultJSExtensions: true,
   transpiler: false,
   paths: {
-    "*": "static/dist/*",
+    "*": "dist/*",
     "github:*": "static/jspm_packages/github/*",
     "npm:*": "static/jspm_packages/npm/*"
   },
@@ -208,28 +208,11 @@ System.config({
     }
   },
   bundles: {
-    "rel/app-build.js": [
+    "static/dist/rel/app-build.js": [
       "npm:hash-set@1.0.1.js",
-      "npm:hash-set@1.0.1/index.js",
-      "rel/app.html!github:systemjs/plugin-text@0.0.8.js",
-      "rel/app.js",
-      "rel/canvas-controller.js",
-      "rel/canvas-drawer.js",
-      "rel/canvas-object.js",
-      "rel/hockey-field-model.js",
-      "rel/loader.js",
-      "rel/main.js",
-      "rel/my-custom-events-handler.js",
-      "rel/nav-bar.html!github:systemjs/plugin-text@0.0.8.js",
-      "rel/player-data.js",
-      "rel/player.js",
-      "rel/point.js",
-      "rel/positions.html!github:systemjs/plugin-text@0.0.8.js",
-      "rel/positions.js",
-      "rel/welcome.html!github:systemjs/plugin-text@0.0.8.js",
-      "rel/welcome.js"
+      "npm:hash-set@1.0.1/index.js"
     ],
-    "rel/aurelia.js": [
+    "static/dist/rel/aurelia.js": [
       "github:github/fetch@1.0.0.js",
       "github:github/fetch@1.0.0/fetch.js",
       "github:twbs/bootstrap@3.3.7.js",
