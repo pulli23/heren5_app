@@ -1,6 +1,6 @@
 module.exports = {
   "bundles": {
-    "static/dist/rel/app-build": {
+    "rel/app-build": {
       "includes": [
         "[rel/*.js]",
         "rel/*.html!text",
@@ -14,7 +14,7 @@ module.exports = {
         "rev": false
       }
     },
-    "static/dist/rel/aurelia": {
+    "rel/aurelia": {
       "includes": [
         "aurelia-framework",
         "aurelia-bootstrapper",

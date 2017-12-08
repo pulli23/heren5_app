@@ -107,9 +107,9 @@ define(["require", "exports", "aurelia-framework", "./my-custom-events-handler",
             this.onPropertyChangedEvent.Invoke(this, new my_custom_events_handler_1.PropertyChangedEventArgs("myLongitude", old, value));
         }
         StartPollingData() {
-            setTimeout(this.StartPollingData.bind(this), 5000);
+            setTimeout(this.StartPollingData.bind(this), 30000);
             const t = Date.now() - this.lastRequest;
-            if (this.lastRequest === 0 || t >= 5000) {
+            if (this.lastRequest === 0 || t >= 30000) {
                 this.doRequest();
             }
         }
@@ -129,7 +129,7 @@ define(["require", "exports", "aurelia-framework", "./my-custom-events-handler",
             let obj = JSON.parse(txt);
             this.PlayerType = obj["type"];
             this.targetsUpdatedCallBack(obj["targets"]);
-            setTimeout(this.doRequest.bind(this), 1000);
+            setTimeout(this.doRequest.bind(this), 500);
         }
         initialize() {
             this.onAttach = new my_custom_events_handler_1.CustomEventHandler();
