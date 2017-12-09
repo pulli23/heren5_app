@@ -114,6 +114,7 @@ export class Game {
     public onDetach: CustomEventHandler<Game, boolean>;
     public onPropertyChangedEvent: CustomEventHandler<Game, PropertyChangedEventArgs>;
     public ExtraInfo: string = "";
+    public myBearing = 0;
 
     private _myLongitude: number;
     private _myLatitude: number;
@@ -171,6 +172,11 @@ export class Game {
         }
         this.nextRequestTimer = setTimeout(this.doRequest.bind(this), 3000)
     }
+
+    debugInterval() {
+        this.myHeading += 0.1;
+    }
+
     constructor(app?: App) {
         this.initialize();
         this.nextRequestTimer = null;
@@ -347,10 +353,10 @@ export class Game {
         this.target_arrow.visible = true;
         let dir = Game.bearing(this.myLatitude, this.myLongitude,
             this.closest_target.latitude, this.closest_target.longitude);
+        this.myBearing = Game.toDeg(dir);
         console.log([Game.toDeg(dir),
             Game.distHaversine(this.myLatitude, this.myLongitude, this.closest_target.latitude, this.closest_target.longitude)]);
-        console.log(typeof this.myHeading)
-        let val = this.myHeading + Math.PI * 1.5 + dir;
+        let val = -this.myHeading + Math.PI * 1.5 + dir;
         this.target_arrow.direction = val;
     }
 

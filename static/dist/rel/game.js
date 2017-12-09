@@ -18,6 +18,7 @@ define(["require", "exports", "aurelia-framework", "./my-custom-events-handler",
         constructor(app) {
             this.PlayerType = "Jager";
             this.ExtraInfo = "";
+            this.myBearing = 0;
             this._myGroupName = "Geef naam";
             this.default_width = 200;
             this.default_height = 200;
@@ -174,6 +175,9 @@ define(["require", "exports", "aurelia-framework", "./my-custom-events-handler",
             }
             this.nextRequestTimer = setTimeout(this.doRequest.bind(this), 3000);
         }
+        debugInterval() {
+            this.myHeading += 0.1;
+        }
         initialize() {
             this.onAttach = new my_custom_events_handler_1.CustomEventHandler();
             this.onDetach = new my_custom_events_handler_1.CustomEventHandler();
@@ -302,10 +306,10 @@ define(["require", "exports", "aurelia-framework", "./my-custom-events-handler",
             }
             this.target_arrow.visible = true;
             let dir = Game_1.bearing(this.myLatitude, this.myLongitude, this.closest_target.latitude, this.closest_target.longitude);
+            this.myBearing = Game_1.toDeg(dir);
             console.log([Game_1.toDeg(dir),
                 Game_1.distHaversine(this.myLatitude, this.myLongitude, this.closest_target.latitude, this.closest_target.longitude)]);
-            console.log(typeof this.myHeading);
-            let val = this.myHeading + Math.PI * 1.5 + dir;
+            let val = -this.myHeading + Math.PI * 1.5 + dir;
             this.target_arrow.direction = val;
         }
         updateLocation(position) {
