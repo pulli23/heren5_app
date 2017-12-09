@@ -57,9 +57,15 @@ export class Game {
     }
     set myHeading(value: number) {
         const old = this._myHeading;
+        if (typeof value === 'string') {
+            value = parseFloat(value);
+        }
         if (old === value) {return;}
         this._myHeading = value;
         this.onPropertyChangedEvent.Invoke(this, new PropertyChangedEventArgs("myHeading", old, value));
+        console.log("setting heading");
+        console.log(typeof value)
+
         this.north_arrow.direction = Math.PI * 1.5 - this._myHeading;
     }
 
@@ -68,6 +74,9 @@ export class Game {
     }
     set myAccuracy(value: number) {
         const old = this._myAccuracy;
+                if (typeof value === 'string') {
+            value = parseFloat(value);
+        }
         if (old === value) {return;}
         this._myAccuracy = value;
         this.onPropertyChangedEvent.Invoke(this, new PropertyChangedEventArgs("myAccuracy", old, value));
@@ -78,6 +87,9 @@ export class Game {
     }
     set myLatitude(value: number) {
         const old = this._myLatitude;
+        if (typeof value === 'string') {
+            value = parseFloat(value);
+        }
         if (old === value) {return;}
         this._myLatitude = value;
         this.onPropertyChangedEvent.Invoke(this, new PropertyChangedEventArgs("myLatitude", old, value));
@@ -88,6 +100,9 @@ export class Game {
     }
     set myLongitude(value: number) {
         const old = this._myLongitude;
+        if (typeof value === 'string') {
+            value = parseFloat(value);
+        }
         if (old === value) {return;}
         this._myLongitude = value;
         this.onPropertyChangedEvent.Invoke(this, new PropertyChangedEventArgs("myLongitude", old, value));
@@ -334,17 +349,23 @@ export class Game {
             this.closest_target.latitude, this.closest_target.longitude);
         console.log([Game.toDeg(dir),
             Game.distHaversine(this.myLatitude, this.myLongitude, this.closest_target.latitude, this.closest_target.longitude)]);
+        console.log(typeof this.myHeading)
         let val = this.myHeading + Math.PI * 1.5 + dir;
         this.target_arrow.direction = val;
     }
 
     private updateLocation(position: Position) {
+        let heading = position.coords.heading;
+
+        if (heading != null) {
+            this.myHeading = Game.toRad(heading);
+        }
+        console.log(typeof this._myHeading);
+
         this.myLatitude = position.coords.latitude;
         this.myLongitude = position.coords.longitude;
         this.myAccuracy = position.coords.accuracy;
-        if (position.coords.heading != null) {
-            this.myHeading = Game.toRad(position.coords.heading);
-        }
+
         this.GPSWorking = true;
     }
 
@@ -402,10 +423,10 @@ export class Game {
         return bearing;
     }
 
-    private static toDeg(radians: number) {
+    private static toDeg(radians: number): number {
         return radians * 180/Math.PI;
     }
-    private static toRad(degrees: number) {
+    private static toRad(degrees: number): number {
         return degrees * Math.PI/180;
     }
 }

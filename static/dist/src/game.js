@@ -89,11 +89,16 @@ define(["require", "exports", "aurelia-framework", "./my-custom-events-handler",
         }
         set myHeading(value) {
             const old = this._myHeading;
+            if (typeof value === 'string') {
+                value = parseFloat(value);
+            }
             if (old === value) {
                 return;
             }
             this._myHeading = value;
             this.onPropertyChangedEvent.Invoke(this, new my_custom_events_handler_1.PropertyChangedEventArgs("myHeading", old, value));
+            console.log("setting heading");
+            console.log(typeof value);
             this.north_arrow.direction = Math.PI * 1.5 - this._myHeading;
         }
         get myAccuracy() {
@@ -101,6 +106,9 @@ define(["require", "exports", "aurelia-framework", "./my-custom-events-handler",
         }
         set myAccuracy(value) {
             const old = this._myAccuracy;
+            if (typeof value === 'string') {
+                value = parseFloat(value);
+            }
             if (old === value) {
                 return;
             }
@@ -112,6 +120,9 @@ define(["require", "exports", "aurelia-framework", "./my-custom-events-handler",
         }
         set myLatitude(value) {
             const old = this._myLatitude;
+            if (typeof value === 'string') {
+                value = parseFloat(value);
+            }
             if (old === value) {
                 return;
             }
@@ -123,6 +134,9 @@ define(["require", "exports", "aurelia-framework", "./my-custom-events-handler",
         }
         set myLongitude(value) {
             const old = this._myLongitude;
+            if (typeof value === 'string') {
+                value = parseFloat(value);
+            }
             if (old === value) {
                 return;
             }
@@ -290,16 +304,19 @@ define(["require", "exports", "aurelia-framework", "./my-custom-events-handler",
             let dir = Game_1.bearing(this.myLatitude, this.myLongitude, this.closest_target.latitude, this.closest_target.longitude);
             console.log([Game_1.toDeg(dir),
                 Game_1.distHaversine(this.myLatitude, this.myLongitude, this.closest_target.latitude, this.closest_target.longitude)]);
+            console.log(typeof this.myHeading);
             let val = this.myHeading + Math.PI * 1.5 + dir;
             this.target_arrow.direction = val;
         }
         updateLocation(position) {
+            let heading = position.coords.heading;
+            if (heading != null) {
+                this.myHeading = Game_1.toRad(heading);
+            }
+            console.log(typeof this._myHeading);
             this.myLatitude = position.coords.latitude;
             this.myLongitude = position.coords.longitude;
             this.myAccuracy = position.coords.accuracy;
-            if (position.coords.heading != null) {
-                this.myHeading = Game_1.toRad(position.coords.heading);
-            }
             this.GPSWorking = true;
         }
         errorLocation(err) {
